@@ -2,11 +2,13 @@ import { useRef, useEffect } from 'react';
 import { gsap } from 'gsap';
 import { useApp } from '../context/AppContext';
 import { Sparkles, BookOpen, Brain, Calendar } from 'lucide-react';
+import { useNavigate } from 'react-router';
 
 export default function LandingPage() {
   const { setActiveView } = useApp();
   const heroRef = useRef();
   const cardsRef = useRef();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const tl = gsap.timeline();
@@ -63,8 +65,24 @@ export default function LandingPage() {
               <h3 style={{ fontFamily:'Syne,sans-serif', fontWeight:700, fontSize:16, marginBottom:8, color:'var(--text-primary)' }}>{f.title}</h3>
               <p style={{ fontSize:13, color:'var(--text-secondary)', lineHeight:1.6 }}>{f.desc}</p>
             </div>
+
           ))}
         </div>
+        landing page common for both students and teachers, with a demo of the dashboard and onboarding flow. From here, users can choose to sign up as a student or teacher and be taken to the respective onboarding flows. The landing page should highlight the key features and benefits of the app, with clear calls to action to get started. The design should be clean, modern, and visually appealing, with a focus on usability and conversion.
+
+
+        now here 2 things login as student/ teacher
+
+        then two pages one for student and one for teacher
+        the student page will have the dashboard and onboarding flow and the teacher page will have the teacher panel and onboarding flow. The landing page should be common for both students and teachers, with a demo of the dashboard and onboarding flow. From here, users can choose to sign up as a student or teacher and be taken to the respective onboarding flows. The landing page should highlight the key features and benefits of the app, with clear calls to action to get started. The design should be clean, modern, and visually appealing, with a focus on usability and conversion.
+        <div className="flex items-center gap-3">
+            <button onClick={() => navigate('/loginstudent')}
+             className="btn-primary"
+              style={{ fontSize:16, padding:'14px 32px', display:'flex', alignItems:'center', gap:8 }}>
+  Sign In
+</button>
+          </div>
+        
       </div>
     </div>
   );

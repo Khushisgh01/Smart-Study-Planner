@@ -26,7 +26,7 @@ export function AppProvider({ children }) {
   const [subjects] = useState(mockSubjects);
   const [tomorrowTasks] = useState(mockTomorrowTasks);
   const [showConfetti, setShowConfetti] = useState(false);
-  const [activeView, setActiveView] = useState('dashboard');
+  const [activeView, setActiveView] = useState('home');
   const [rescheduledAlert, setRescheduledAlert] = useState(null);
 
   const updateTask = (id, status) => {
