@@ -14,16 +14,16 @@ export default function TaskCard({ task, index }) {
 
   if (task.status !== 'pending') {
     return (
-      <div className="card" style={{
-        padding: '14px 18px', marginBottom: 10, opacity: 0.5,
-        display: 'flex', alignItems: 'center', gap: 12,
+      <div className="card-flat" style={{
+        padding: '12px 16px', marginBottom: 8, opacity: 0.55,
+        display: 'flex', alignItems: 'center', gap: 10,
         animation: 'slideUp 0.3s ease',
       }}>
-        <div style={{ width: 10, height: 10, borderRadius: '50%', background: task.status === 'done' ? '#00c9b1' : task.status === 'partial' ? '#ffb700' : '#ff2d78' }} />
-        <span style={{ fontSize: 13, color: 'var(--text-muted)', textDecoration: task.status === 'done' ? 'line-through' : 'none' }}>
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: task.status === 'done' ? '#00c9b1' : task.status === 'partial' ? '#e8a020' : '#ff2d78', flexShrink: 0 }} />
+        <span style={{ fontSize: 13, color: 'var(--text-muted)', textDecoration: task.status === 'done' ? 'line-through' : 'none', flex: 1 }}>
           {task.chapter} — {typeLabel[task.taskType]}
         </span>
-        <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{task.status}</span>
+        <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{task.status}</span>
       </div>
     );
   }
@@ -34,61 +34,57 @@ export default function TaskCard({ task, index }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        padding: '16px 20px', marginBottom: 10,
-        transform: hovered ? 'translateX(4px)' : 'translateX(0)',
+        padding: '16px 18px', marginBottom: 10,
+        transform: hovered ? 'translateX(4px) translateY(-2px)' : 'translateX(0)',
         transition: 'all 0.3s cubic-bezier(0.34,1.56,0.64,1)',
         animationDelay: `${index * 0.08}s`,
         animation: 'slideUp 0.4s ease both',
-        position: 'relative',
-        overflow: 'hidden',
+        position: 'relative', overflow: 'hidden',
       }}
     >
       {isRescheduled && (
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0,
-          background: 'rgba(255,183,0,0.15)', padding: '6px 16px',
-          fontSize: 12, color: '#d4960a', fontWeight: 600,
-          borderBottom: '1px solid rgba(255,183,0,0.3)',
-          animation: 'slideUp 0.3s ease',
+          background: 'rgba(232,160,32,0.12)', padding: '5px 14px',
+          fontSize: 11, color: '#c9820a', fontWeight: 600,
+          borderBottom: '1px solid rgba(232,160,32,0.25)',
         }}>
           ↻ Rescheduling to tomorrow automatically...
         </div>
       )}
 
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', paddingTop: isRescheduled ? 24 : 0 }}>
         <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <span style={{
-              fontSize: 10, fontWeight: 800, letterSpacing: '0.06em',
-              padding: '2px 8px', borderRadius: 6,
-              background: `${color}20`, color,
-            }}>{typeLabel[task.taskType]}</span>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{task.subject}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 5 }}>
+            <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.06em', padding: '2px 8px', borderRadius: 6, background: `${color}18`, color }}>
+              {typeLabel[task.taskType]}
+            </span>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{task.subject}</span>
           </div>
-          <h4 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8 }}>
+          <h4 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>
             {task.chapter}
           </h4>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--text-muted)' }}>
-            <Clock size={12} />
-            <span style={{ fontSize: 12 }}>{task.estimatedTime} min</span>
+            <Clock size={11} />
+            <span style={{ fontSize: 11 }}>{task.estimatedTime} min</span>
           </div>
         </div>
 
         {hovered && (
-          <div style={{ display: 'flex', gap: 6, animation: 'slideInRight 0.25s ease' }}>
+          <div style={{ display: 'flex', gap: 6, animation: 'slideInRight 0.2s ease' }}>
             {[
-              { status: 'done', icon: Check, color: '#00c9b1', label: 'Done' },
-              { status: 'partial', icon: AlertTriangle, color: '#ffb700', label: 'Partial' },
-              { status: 'skipped', icon: X, color: '#ff2d78', label: 'Skip' },
-            ].map(({ status, icon: Icon, color: c, label }) => (
+              { status: 'done', icon: Check, c: '#00c9b1', label: 'Done' },
+              { status: 'partial', icon: AlertTriangle, c: '#e8a020', label: 'Partial' },
+              { status: 'skipped', icon: X, c: '#ff2d78', label: 'Skip' },
+            ].map(({ status, icon: Icon, c, label }) => (
               <button key={status} onClick={() => updateTask(task._id, status)} title={label} style={{
-                width: 34, height: 34, borderRadius: 10,
-                background: `${c}18`, border: `1px solid ${c}40`,
+                width: 32, height: 32, borderRadius: 9,
+                background: `${c}15`, border: `1px solid ${c}35`,
                 color: c, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'all 0.2s ease',
               }}>
-                <Icon size={15} />
+                <Icon size={13} />
               </button>
             ))}
           </div>
