@@ -1,23 +1,19 @@
 import mongoose from 'mongoose';
 import bcrypt from "bcryptjs";
 
-const userSchema = new mongoose.Schema({
+const teacherSchema = new mongoose.Schema({
   name: String,
   email: { type: String, required: true, lowercase: true, unique: true },
   password:{type:String, required:true},
-  level: { type: String, enum: ['topper', 'average', 'last-minute'] },
-  dailyHours: Number,
-  target: String,
-  examReadiness: { type: Number, default: 0 },
 }, { timestamps: true });
 
 
-userSchema.methods.matchPassword = async function (enteredPassword) {
+teacherSchema.methods.matchPassword = async function (enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
   };
   
 
-userSchema.pre("save", async function (next) {
+teacherSchema.pre("save", async function (next) {
     if (!this.isModified("password")) {
   return next();
 }
@@ -27,4 +23,4 @@ userSchema.pre("save", async function (next) {
 });
 
 
-export default mongoose.model('User', userSchema);
+export default mongoose.model('Teacher', teacherSchema);
