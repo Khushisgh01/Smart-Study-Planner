@@ -13,9 +13,20 @@ const subjectSchema = new mongoose.Schema({
   name: String,
   examDate: Date,
   color: String,
+
+  classId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Class',
+    required: true
+  },
+
   chapters: [chapterSchema],
-  progress: { type: Number, default: 0 },
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Teacher'
+  }
+
 }, { timestamps: true });
 
 export default mongoose.model('Subject', subjectSchema);
