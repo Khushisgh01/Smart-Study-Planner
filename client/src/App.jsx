@@ -14,9 +14,10 @@ export default function App() {
     <ThemeProvider>
       <AppProvider>
         <BrowserRouter>
-          <div className="noise-bg" style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+          {/* Removed fixed height and hidden overflow to allow page scrolling anywhere it's needed */}
+          <div className="noise-bg" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', overflowX: 'hidden' }}>
             <Navbar />
-            <div style={{ flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
               <Routes>
                 <Route path="/"            element={<LandingPage />} />
                 <Route path="/login"       element={<LoginPage />} />

@@ -3,16 +3,15 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { gsap } from 'gsap';
 import { useTheme } from '../context/ThemeContext';
 import { useApp } from '../context/AppContext';
-import { Sun, Moon, BookOpen, GraduationCap, LayoutDashboard, FileText, Home, Menu, X, School } from 'lucide-react';
+import { Sun, Moon, BookOpen, GraduationCap, LayoutDashboard, FileText, Home, LogOut, School } from 'lucide-react';
 
 export default function Navbar() {
   const { dark, toggle } = useTheme();
-  const { role } = useApp();
+  const { role, setRole, setUserName } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
   const navRef = useRef();
   const logoRef = useRef();
-  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     gsap.fromTo(navRef.current,
@@ -39,6 +38,19 @@ export default function Navbar() {
   ];
 
   const links = role === 'teacher' ? teacherLinks : studentLinks;
+
+  // Logout Functionality
+  const handleLogout = () => {
+    // 1. Remove the token from local storage
+    localStorage.removeItem('token');
+    
+    // 2. Clear the global app state
+    setRole(null);
+    setUserName('');
+    
+    // 3. Redirect to the landing/home page
+    navigate('/');
+  };
 
   return (
     <nav ref={navRef} style={{
@@ -109,7 +121,7 @@ export default function Navbar() {
       </div>
 
       {/* Right controls */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
         {/* Theme toggle */}
         <button onClick={toggle} style={{
           width: 52, height: 28, borderRadius: 14,
@@ -143,6 +155,30 @@ export default function Navbar() {
             {role === 'teacher' ? <GraduationCap size={13} /> : <BookOpen size={13} />}
             {role === 'teacher' ? 'Teacher' : 'Student'}
           </div>
+        )}
+
+        {/* Logout Button (Only visible if logged in) */}
+        {role && (
+          <button 
+            onClick={handleLogout}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '6px 12px', borderRadius: 10,
+              background: 'transparent',
+              border: '1px solid rgba(239, 68, 68, 0.3)', // light red border
+              color: '#ef4444', // red text
+              fontWeight: 600, fontSize: 13, cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            <LogOut size={14} /> Logout
+          </button>
         )}
       </div>
     </nav>
