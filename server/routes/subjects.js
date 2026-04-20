@@ -1,50 +1,81 @@
 import express from 'express';
 import Subject from '../models/Subject.js';
 import Class from '../models/Class.js';
-import { protect } from '../middleware/auth.js';
+import { protect, teacherOnly } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // GET subjects of a class
 router.get('/class/:classId', protect, async (req, res) => {
-  const subjects = await Subject.find({
-    classId: req.params.classId
-  });
-
-  res.json(subjects);
+  try {
+    const subjects = await Subject.find({ classId: req.params.classId });
+    res.json(subjects);
+  } catch (err) {
+    res.status(500).json({ message: err.message }); // Bug 13
+  }
 });
 
 // CREATE subject inside class
-router.post('/class/:classId', protect, async (req, res) => {
-  const subject = await Subject.create({
-    ...req.body,
-    classId: req.params.classId,
-    createdBy: req.user.id
-  });
+router.post('/class/:classId', protect, teacherOnly, async (req, res) => {
+  try {
+    const { examDate, ...rest } = req.body;
 
-  // push into class
-  await Class.findByIdAndUpdate(req.params.classId, {
-    $push: { subjects: subject._id }
-  });
+    const subject = await Subject.create({
+      ...rest,
+      // Bug 17: always store examDate as a proper Date object
+      examDate: examDate ? new Date(examDate) : undefined,
+      classId: req.params.classId,
+      createdBy: req.user.id,
+    });
 
-  res.json(subject);
+    await Class.findByIdAndUpdate(req.params.classId, {
+      $push: { subjects: subject._id },
+    });
+
+    res.json(subject);
+  } catch (err) {
+    res.status(500).json({ message: err.message }); // Bug 13
+  }
 });
 
 // UPDATE subject
-router.put('/:id', protect, async (req, res) => {
-  const updated = await Subject.findByIdAndUpdate(
-    req.params.id,
-    req.body,
-    { new: true }
-  );
+router.put('/:id', protect, teacherOnly, async (req, res) => {
+  try {
+    const { examDate, ...rest } = req.body;
 
-  res.json(updated);
+    const updated = await Subject.findByIdAndUpdate(
+      req.params.id,
+      {
+        ...rest,
+        // Bug 17: coerce to Date on update too
+        ...(examDate ? { examDate: new Date(examDate) } : {}),
+      },
+      { new: true }
+    );
+
+    if (!updated) return res.status(404).json({ message: 'Subject not found' });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ message: err.message }); // Bug 13
+  }
 });
 
-// DELETE subject
-router.delete('/:id', protect, async (req, res) => {
-  await Subject.findByIdAndDelete(req.params.id);
-  res.json({ message: 'Subject deleted' });
+// DELETE subject — also remove from Class.subjects array (Bug 22)
+router.delete('/:id', protect, teacherOnly, async (req, res) => {
+  try {
+    const subject = await Subject.findById(req.params.id);
+    if (!subject) return res.status(404).json({ message: 'Subject not found' });
+
+    // Bug 22: pull the ObjectId reference out of Class.subjects
+    await Class.findByIdAndUpdate(subject.classId, {
+      $pull: { subjects: subject._id },
+    });
+
+    await Subject.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Subject deleted' });
+  } catch (err) {
+    res.status(500).json({ message: err.message }); // Bug 13
+  }
 });
 
 export default router;
