@@ -79,6 +79,7 @@
 // });
 
 // export default router;
+/*
 import express from 'express';
 import Subject from '../models/Subject.js';
 import Class   from '../models/Class.js';
@@ -210,6 +211,192 @@ router.post('/:id/pyqs', protect, teacherOnly, async (req, res) => {
 });
 
 // ── DELETE /api/subjects/:id/pyqs/:pyqId ────────────────────────────────
+router.delete('/:id/pyqs/:pyqId', protect, teacherOnly, async (req, res) => {
+  try {
+    const subject = await Subject.findByIdAndUpdate(
+      req.params.id,
+      { $pull: { pyqs: { _id: req.params.pyqId } } },
+      { new: true }
+    );
+    if (!subject) return res.status(404).json({ message: 'Subject not found' });
+    res.json(subject);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+export default router;
+
+*/
+
+import express from 'express';
+import Subject from '../models/Subject.js';
+import Class   from '../models/Class.js';
+import User    from '../models/User.js';
+import { protect, teacherOnly } from '../middleware/auth.js';
+
+const router = express.Router();
+
+// ── GET /api/subjects/teacher ─────────────────────────────────────────────
+// Teacher: all subjects across all their classes.
+// MUST be before /:id to avoid "teacher" being treated as a Mongo ObjectId.
+router.get('/teacher', protect, teacherOnly, async (req, res) => {
+  try {
+    const classes  = await Class.find({ teacher: req.user.id }).select('_id name section');
+    const classIds = classes.map(c => c._id);
+    const subjects = await Subject.find({ classId: { $in: classIds } })
+      .lean();
+
+    // Attach class info to each subject for context
+    const classMap = {};
+    for (const c of classes) classMap[c._id.toString()] = { name: c.name, section: c.section };
+
+    const result = subjects.map(s => ({
+      ...s,
+      classInfo: classMap[s.classId?.toString()] || null,
+    }));
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ── GET /api/subjects ─────────────────────────────────────────────────────
+// Student: subjects for their enrolled class.
+router.get('/', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('classId');
+    if (!user?.classId) return res.json([]);
+
+    const subjects = await Subject.find({ classId: user.classId }).lean();
+    res.json(subjects);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ── GET /api/subjects/class/:classId ─────────────────────────────────────
+// Get all subjects for a specific class (teacher or student with access).
+router.get('/class/:classId', protect, async (req, res) => {
+  try {
+    const subjects = await Subject.find({ classId: req.params.classId }).lean();
+    res.json(subjects);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ── POST /api/subjects/class/:classId ────────────────────────────────────
+// Teacher: add a subject to a class.
+router.post('/class/:classId', protect, teacherOnly, async (req, res) => {
+  try {
+    // Verify the class belongs to this teacher
+    const cls = await Class.findOne({ _id: req.params.classId, teacher: req.user.id });
+    if (!cls) return res.status(403).json({ message: 'Not your class' });
+
+    const { examDate, ...rest } = req.body;
+
+    // Prevent duplicate subject names in the same class
+    const duplicate = await Subject.findOne({
+      classId: req.params.classId,
+      name: rest.name,
+    });
+    if (duplicate) {
+      return res.status(400).json({ message: `Subject "${rest.name}" already exists in this class` });
+    }
+
+    const subject = await Subject.create({
+      ...rest,
+      examDate:  examDate ? new Date(examDate) : undefined,
+      classId:   req.params.classId,
+      createdBy: req.user.id,
+    });
+
+    await Class.findByIdAndUpdate(req.params.classId, {
+      $push: { subjects: subject._id },
+    });
+
+    res.status(201).json(subject);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ── PUT /api/subjects/:id ─────────────────────────────────────────────────
+// Teacher: update a subject (name, examDate, color, chapters…).
+router.put('/:id', protect, teacherOnly, async (req, res) => {
+  try {
+    const subject = await Subject.findById(req.params.id);
+    if (!subject) return res.status(404).json({ message: 'Subject not found' });
+
+    // Ensure the subject belongs to one of this teacher's classes
+    const cls = await Class.findOne({ _id: subject.classId, teacher: req.user.id });
+    if (!cls) return res.status(403).json({ message: 'Not your subject' });
+
+    const { examDate, ...rest } = req.body;
+    const updated = await Subject.findByIdAndUpdate(
+      req.params.id,
+      { ...rest, ...(examDate ? { examDate: new Date(examDate) } : {}) },
+      { new: true, runValidators: true }
+    );
+
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ── DELETE /api/subjects/:id ──────────────────────────────────────────────
+router.delete('/:id', protect, teacherOnly, async (req, res) => {
+  try {
+    const subject = await Subject.findById(req.params.id);
+    if (!subject) return res.status(404).json({ message: 'Subject not found' });
+
+    const cls = await Class.findOne({ _id: subject.classId, teacher: req.user.id });
+    if (!cls) return res.status(403).json({ message: 'Not your subject' });
+
+    await Class.findByIdAndUpdate(subject.classId, {
+      $pull: { subjects: subject._id },
+    });
+    await Subject.findByIdAndDelete(req.params.id);
+
+    res.json({ message: 'Subject deleted' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ── POST /api/subjects/:id/pyqs ───────────────────────────────────────────
+// Teacher: add a PYQ entry to a subject.
+router.post('/:id/pyqs', protect, teacherOnly, async (req, res) => {
+  try {
+    const { year, title, fileUrl } = req.body;
+    if (!year || !title) {
+      return res.status(400).json({ message: 'year and title are required' });
+    }
+
+    const pyq = {
+      year,
+      title,
+      uploadedAt: new Date(),
+      fileUrl: fileUrl || '#', // real URL from S3/Cloudinary when integrated
+    };
+
+    const subject = await Subject.findByIdAndUpdate(
+      req.params.id,
+      { $push: { pyqs: pyq } },
+      { new: true }
+    );
+
+    if (!subject) return res.status(404).json({ message: 'Subject not found' });
+    res.json(subject);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ── DELETE /api/subjects/:id/pyqs/:pyqId ─────────────────────────────────
 router.delete('/:id/pyqs/:pyqId', protect, teacherOnly, async (req, res) => {
   try {
     const subject = await Subject.findByIdAndUpdate(

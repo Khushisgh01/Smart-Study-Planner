@@ -9,7 +9,7 @@ import classRoutes from './routes/class.js';
 
 dotenv.config();
 connectDB();
-
+//console.log("ENV CHECK:", process.env.MONGO_URI);
 const app = express();
 
 // Bug 14: explicit CORS config allowing the Vite frontend origin
