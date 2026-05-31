@@ -4,7 +4,8 @@ import bcrypt from "bcryptjs";
 const teacherSchema = new mongoose.Schema({
   name: String,
   email: { type: String, required: true, lowercase: true, unique: true },
-  password:{type:String, required:true},
+  password: { type: String, required: true },
+  isVerified: { type: Boolean, default: false },
 }, { timestamps: true });
 
 
@@ -13,13 +14,10 @@ teacherSchema.methods.matchPassword = async function (enteredPassword) {
   };
   
 
-teacherSchema.pre("save", async function (next) {
-    if (!this.isModified("password")) {
-  return next();
-}
-  
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+teacherSchema.pre('save', async function () {
+  if (!this.isModified('password')) return;
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
 });
 
 

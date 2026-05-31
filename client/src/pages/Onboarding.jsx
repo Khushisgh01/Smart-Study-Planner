@@ -828,6 +828,7 @@ export default function Onboarding() {
   const containerRef = useRef();
   const progressRef  = useRef();
   const navigate     = useNavigate();
+  const { fetchSubjects, fetchTodayTasks, fetchTomorrowTasks } = useApp();
 
   // Step indices
   const isQuizStep  = step < QUIZ_STEPS.length;          // 0, 1
@@ -873,6 +874,11 @@ export default function Onboarding() {
       try {
         await savePreferences(answers.level, answers.target, hours);
         await enrollInClass(selectedClass._id);
+        await Promise.all([
+          fetchSubjects?.(),
+          fetchTodayTasks?.(),
+          fetchTomorrowTasks?.(),
+        ]);
         gsap.to(containerRef.current, {
           opacity: 0, y: -30, scale: 0.95, duration: 0.4, ease: 'power2.in',
           onComplete: () => setDone(true),

@@ -88,7 +88,12 @@ export const teacherService = {
     return data;
   },
 
-  // ── Enrollment ────────────────────────────────────────────
+  async getClassStudents(classId) {
+    const res = await fetch(`${API_BASE}/class/${classId}/students`, { headers: getAuthHeader() });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to fetch students');
+    return data;
+  },
   // Bug 15: enroll a student into a class
   async enrollStudent(classId) {
     const res = await fetch(`${API_BASE}/class/${classId}/enroll`, {

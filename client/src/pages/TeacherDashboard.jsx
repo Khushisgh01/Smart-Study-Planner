@@ -669,7 +669,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { gsap } from 'gsap';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { teacherService } from '../services/teacherService';
 import {
   GraduationCap, Plus, BookOpen, Trash2, Zap, Users,
@@ -677,6 +677,8 @@ import {
   BarChart3, Sparkles, AlertCircle,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { formatExamDateShort } from '../utils/examDate';
+import { getDisplayName } from '../utils/userDisplay';
 
 // ── Class tab config ──────────────────────────────────────────────────────
 const CLASS_TABS = [
@@ -824,7 +826,11 @@ function ClassCard({ cls, tab, onAddSubject, onDelete }) {
   const [generating, setGenerating] = useState(false);
   const [generated, setGenerated]  = useState(false);
   const [deleting, setDeleting]    = useState(false);
+  const [showStudents, setShowStudents] = useState(false);
   const cardRef = useRef();
+
+  const students = cls.students || [];
+  const studentCount = cls.studentCount ?? students.length;
 
   const handleGenerate = async () => {
     setGenerating(true);
@@ -856,10 +862,24 @@ function ClassCard({ cls, tab, onAddSubject, onDelete }) {
       style={{ background: 'var(--bg-card)', borderRadius: 22, border: `1px solid ${hovered ? tab.color + '50' : 'var(--border)'}`, padding: 0, overflow: 'hidden', boxShadow: hovered ? `0 16px 50px ${tab.color}20, var(--shadow-card)` : 'var(--shadow-card)', transition: 'border-color 0.3s ease, box-shadow 0.3s ease', position: 'relative' }}>
 
       <div style={{ background: tab.gradient, padding: '20px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>CRPS · {tab.label}</p>
-          <h3 style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 22, color: 'white' }}>Section {cls.section}</h3>
-          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>{cls.subjects?.length || 0} subject{cls.subjects?.length !== 1 ? 's' : ''}</p>
+        <div style={{ minWidth: 0, flex: 1, paddingRight: 12 }}>
+          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.85)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 6 }}>
+            CRPS · {tab.label}
+          </p>
+          <h3 style={{
+            fontFamily: 'DM Sans, system-ui, sans-serif',
+            fontWeight: 700,
+            fontSize: 20,
+            color: '#ffffff',
+            lineHeight: 1.2,
+            margin: 0,
+            letterSpacing: '0.01em',
+          }}>
+            Section {cls.section}
+          </h3>
+          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>
+            {cls.subjects?.length || 0} subject{cls.subjects?.length !== 1 ? 's' : ''} · {studentCount} student{studentCount !== 1 ? 's' : ''}
+          </p>
         </div>
         <button onClick={handleDelete} disabled={deleting} style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 10, padding: '7px 9px', color: 'white', cursor: 'pointer', backdropFilter: 'blur(8px)', transition: 'all 0.2s ease' }}
           onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,45,120,0.5)'}
@@ -873,7 +893,12 @@ function ClassCard({ cls, tab, onAddSubject, onDelete }) {
             {cls.subjects.slice(0, 4).map((sub, i) => (
               <div key={sub._id || i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: i < Math.min(cls.subjects.length, 4) - 1 ? '1px solid var(--border)' : 'none', animation: `slideUp 0.3s ease ${i * 0.05}s both` }}>
                 <div style={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, background: sub.color || tab.color, boxShadow: `0 0 6px ${sub.color || tab.color}60` }} />
-                <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', flex: 1 }}>{sub.name}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', display: 'block' }}>{sub.name}</span>
+                  <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+                    Exam: {formatExamDateShort(sub.examDate)}
+                  </span>
+                </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Layers size={11} color="var(--text-muted)" /><span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{sub.chapters?.length || 0}</span></div>
               </div>
             ))}
@@ -886,6 +911,38 @@ function ClassCard({ cls, tab, onAddSubject, onDelete }) {
             <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Add the first subject below</p>
           </div>
         )}
+
+        {/* Enrolled students */}
+        <div style={{ marginBottom: 14, padding: '12px 14px', borderRadius: 14, background: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
+          <button type="button" onClick={() => setShowStudents(v => !v)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Users size={14} color={tab.color} />
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' }}>
+                {studentCount} student{studentCount !== 1 ? 's' : ''} enrolled
+              </span>
+            </div>
+            <span style={{ fontSize: 11, color: tab.color, fontWeight: 600 }}>{showStudents ? 'Hide' : 'View'}</span>
+          </button>
+          {showStudents && (
+            <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {students.length === 0 ? (
+                <p style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center', padding: '8px 0' }}>
+                  No students enrolled yet. Students join via onboarding.
+                </p>
+              ) : students.map(st => (
+                <div key={st._id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 10, background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 8, background: `${tab.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: tab.color }}>
+                    {(st.name || '?').charAt(0).toUpperCase()}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>{st.name}</p>
+                    <p style={{ fontSize: 10, color: 'var(--text-muted)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{st.email}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={() => onAddSubject(cls._id)} style={{ flex: 1, padding: '10px 12px', borderRadius: 12, background: `${tab.color}10`, border: `1px solid ${tab.color}25`, color: tab.color, fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all 0.25s ease' }}
@@ -921,7 +978,9 @@ const TeacherDashboard = () => {
   const [error, setError]         = useState('');
   const { userName }              = useApp();
   const navigate                  = useNavigate();
+  const location                  = useLocation();
   const headerRef                 = useRef();
+  const displayName               = getDisplayName(userName || 'Teacher');
 
   const tab             = CLASS_TABS.find(t => t.num === activeTab);
   const filteredClasses = classes.filter(c => c.name === activeTab);
@@ -930,6 +989,7 @@ const TeacherDashboard = () => {
   const totalClasses  = classes.length;
   const totalSubjects = classes.reduce((a, c) => a + (c.subjects?.length || 0), 0);
   const totalChapters = classes.reduce((a, c) => a + (c.subjects?.reduce((b, s) => b + (s.chapters?.length || 0), 0) || 0), 0);
+  const totalStudents = classes.reduce((a, c) => a + (c.studentCount || 0), 0);
 
   // Entrance animation
   useEffect(() => {
@@ -945,8 +1005,8 @@ const TeacherDashboard = () => {
   useEffect(() => {
     if (loading) return;
     gsap.fromTo('.class-grid-card',
-      { opacity: 0, y: 28, scale: 0.94 },
-      { opacity: 1, y: 0, scale: 1, stagger: 0.09, duration: 0.5, ease: 'back.out(1.4)', delay: 0.05 }
+      { opacity: 0, y: 28 },
+      { opacity: 1, y: 0, stagger: 0.09, duration: 0.5, ease: 'power2.out', delay: 0.05 }
     );
   }, [activeTab, classes, loading]);
 
@@ -963,7 +1023,7 @@ const TeacherDashboard = () => {
     }
   };
 
-  useEffect(() => { fetchClasses(); }, []);
+  useEffect(() => { fetchClasses(); }, [location.key]);
 
   const handleDelete = async (classId) => {
     try {
@@ -990,8 +1050,18 @@ const TeacherDashboard = () => {
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 14, padding: '6px 16px', borderRadius: 50, fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', background: `${tab?.color}12`, border: `1px solid ${tab?.color}25`, color: tab?.color }}>
                 <GraduationCap size={13} /> Teacher Dashboard · CRPS Bakhtawarpur
               </div>
-              <h1 style={{ fontFamily: 'Syne,sans-serif', fontWeight: 800, fontSize: 34, color: 'var(--text-primary)', lineHeight: 1.1, marginBottom: 8 }}>
-                Welcome back, <span style={{ background: tab?.gradient, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{userName}!</span> 👨‍🏫
+              <h1 style={{
+                fontFamily: 'Syne, sans-serif',
+                fontWeight: 800,
+                fontSize: 'clamp(1.5rem, 4vw, 2rem)',
+                color: 'var(--text-primary)',
+                lineHeight: 1.25,
+                marginBottom: 8,
+                wordBreak: 'break-word',
+              }}>
+                Welcome back,{' '}
+                <span style={{ color: tab?.color || '#1a3fa3' }}>{displayName}</span>
+                <span aria-hidden="true"> 👨‍🏫</span>
               </h1>
               <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
                 {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} · Manage your classes, subjects and tasks
@@ -1009,7 +1079,7 @@ const TeacherDashboard = () => {
               { label: 'Total Classes',  value: totalClasses,  icon: School,   color: '#1a3fa3' },
               { label: 'Total Subjects', value: totalSubjects, icon: BookOpen,  color: '#00c9b1' },
               { label: 'Total Chapters', value: totalChapters, icon: Layers,    color: '#e8a020' },
-              { label: 'Students',       value: '500+',        icon: Users,     color: '#ff2d78' },
+              { label: 'Students', value: totalStudents, icon: Users, color: '#ff2d78' },
             ].map((s, i) => (
               <div key={i} className="stat-chip-td" style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '16px 22px', borderRadius: 18, background: `${s.color}08`, border: `1px solid ${s.color}18`, minWidth: 160 }}>
                 <div style={{ width: 40, height: 40, borderRadius: 12, background: `${s.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><s.icon size={20} color={s.color} /></div>
@@ -1054,7 +1124,7 @@ const TeacherDashboard = () => {
                 ? 'Loading…'
                 : filteredClasses.length === 0
                   ? 'No sections created yet'
-                  : `${filteredClasses.length} section${filteredClasses.length !== 1 ? 's' : ''} · ${filteredClasses.reduce((a, c) => a + (c.subjects?.length || 0), 0)} subjects`}
+                  : `${filteredClasses.length} section${filteredClasses.length !== 1 ? 's' : ''} · ${filteredClasses.reduce((a, c) => a + (c.subjects?.length || 0), 0)} subjects · ${filteredClasses.reduce((a, c) => a + (c.studentCount || 0), 0)} students`}
             </span>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>

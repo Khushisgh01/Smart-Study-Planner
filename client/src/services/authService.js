@@ -1,5 +1,16 @@
 const API_BASE = '/api/auth';
 
+const storeSession = (data) => {
+  localStorage.setItem('token', data.token);
+  localStorage.setItem('userRole', data.role || 'student');
+  localStorage.setItem('user', JSON.stringify({
+    _id: data._id,
+    name: data.name,
+    email: data.email,
+    role: data.role,
+  }));
+};
+
 const authService = {
   async loginStudent({ email, password }) {
     const res = await fetch(`${API_BASE}/user/login`, {
@@ -10,9 +21,7 @@ const authService = {
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Login failed');
 
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('user', data.name);
-    localStorage.setItem('userRole', data.role || 'student'); // Bug 4/5: store role from API
+    storeSession({ ...data, role: data.role || 'student' });
     return data;
   },
 
@@ -25,9 +34,7 @@ const authService = {
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Registration failed');
 
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('user', data.name);
-    localStorage.setItem('userRole', data.role || 'student');
+    storeSession({ ...data, role: data.role || 'student' });
     return data;
   },
 
@@ -40,9 +47,7 @@ const authService = {
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Login failed');
 
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('user', data.name);
-    localStorage.setItem('userRole', data.role || 'teacher'); // Bug 4/5: store role
+    storeSession({ ...data, role: data.role || 'teacher' });
     return data;
   },
 
@@ -55,9 +60,7 @@ const authService = {
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Registration failed');
 
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('user', data.name);
-    localStorage.setItem('userRole', data.role || 'teacher');
+    storeSession({ ...data, role: data.role || 'teacher' });
     return data;
   },
 
@@ -71,11 +74,17 @@ const authService = {
   },
 
   getCurrentUser() {
-    const name = localStorage.getItem('user');
-    const role = localStorage.getItem('userRole');
     const token = localStorage.getItem('token');
     if (!token) return null;
-    return { name, role };
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || 'null');
+      if (user?.name) return user;
+    } catch {
+      // legacy plain-string storage
+    }
+    const name = localStorage.getItem('user');
+    const role = localStorage.getItem('userRole');
+    return name ? { name, role } : null;
   },
 
   getToken() {

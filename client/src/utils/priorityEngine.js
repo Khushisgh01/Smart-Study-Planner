@@ -18,6 +18,7 @@ export function getBadgeStyle(badge) {
   const map = {
     'High Weight': { bg: 'rgba(26,63,163,0.12)',   color: '#1a3fa3' },
     'Urgent':      { bg: 'rgba(255,45,120,0.12)',  color: '#ff2d78' },
+    'Weak Area':   { bg: 'rgba(232,160,32,0.12)',  color: '#c9820a' },
     'Weak':        { bg: 'rgba(232,160,32,0.12)',  color: '#c9820a' },
     'On Track':    { bg: 'rgba(0,201,177,0.12)',   color: '#00c9b1' },
   };

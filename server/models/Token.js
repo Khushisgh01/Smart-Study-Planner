@@ -16,8 +16,11 @@ const tokenSchema = new mongoose.Schema({
   userId: {
     type:     mongoose.Schema.Types.ObjectId,
     required: true,
-    // Both User and Teacher docs use this — we store the model name alongside
-    userModel: { type: String, enum: ['User', 'Teacher'], required: true },
+  },
+  userModel: {
+    type:     String,
+    enum:     ['User', 'Teacher'],
+    required: true,
   },
   token: {
     type:     String,

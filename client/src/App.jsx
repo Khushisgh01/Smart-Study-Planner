@@ -126,16 +126,11 @@ const ProtectedRoute = ({ children }) => {
 };
 
 const PublicRoute = ({ children }) => {
-  const token      = localStorage.getItem('token');
-  const userString = localStorage.getItem('user');
-  if (token && userString) {
-    try {
-      const user = JSON.parse(userString);
-      if (user.role === 'teacher') return <Navigate to="/teacher/dashboard" replace />;
-      return <Navigate to="/dashboard" replace />;
-    } catch {
-      localStorage.clear();
-    }
+  const token = localStorage.getItem('token');
+  const role    = localStorage.getItem('userRole');
+  if (token && role) {
+    if (role === 'teacher') return <Navigate to="/teacher/dashboard" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
   return children;
 };
